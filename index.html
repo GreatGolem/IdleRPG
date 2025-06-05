@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EternalTower v0.1</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="game-container">
+        <!-- 角色状态栏 -->
+        <div class="status-bar">
+            <div class="character-info">
+                <span id="character-level">Lv.1</span>
+                <span id="character-class">战士</span>
+            </div>
+            <div class="hp-bar">
+                <span>HP:</span>
+                <span id="current-hp">100</span>/<span id="max-hp">100</span>
+            </div>
+        </div>
+
+        <!-- 角色属性面板 -->
+        <div class="stats-panel">
+            <div class="stats-title">角色属性</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-name">攻击力</div>
+                    <div class="stat-value" id="stat-atk">10</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-name">防御力</div>
+                    <div class="stat-value" id="stat-def">5</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-name">生命值</div>
+                    <div class="stat-value" id="stat-hp">100</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-name">魔法值</div>
+                    <div class="stat-value" id="stat-mp">0</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-name">敏捷</div>
+                    <div class="stat-value" id="stat-agi">3</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-name">暴击率</div>
+                    <div class="stat-value" id="stat-crit-rate">5%</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-name">暴击伤害</div>
+                    <div class="stat-value" id="stat-crit-damage">150%</div>
+                </div>
+            </div>
+            <div class="stats-toggle" id="stats-toggle">▼</div>
+        </div>
+
+        <!-- 主要内容区 -->
+        <div class="main-content">
+            <!-- 关卡信息 -->
+            <div class="stage-info">
+                <h3 id="stage-name">新手平原</h3>
+                <p>推荐等级: <span id="recommended-level">1</span></p>
+                <p>怪物: <span id="monster-type">小型史莱姆</span></p>
+                <div class="progress-bar">
+                    <div class="progress" id="battle-progress"></div>
+                </div>
+                <p>挂机时间: <span id="idle-time">00:00</span></p>
+            </div>
+
+            <!-- 战斗日志 -->
+            <div class="battle-log">
+                <div class="log-options">
+                    <label>
+                        <input type="checkbox" id="auto-scroll"> 自动滚动
+                    </label>
+                </div>
+                <div id="log-content"></div>
+            </div>
+        </div>
+
+        <!-- 底部导航栏 -->
+        <div class="nav-bar">
+            <button id="btn-equipment">装备</button>
+            <button id="btn-pets">魔宠</button>
+            <button id="btn-skills">技能</button>
+            <button id="btn-stages">关卡选择</button>
+            <div class="settings-menu-container">
+                <button id="btn-settings">设置</button>
+                <div class="settings-menu" id="settings-menu">
+                    <button id="btn-manual-save">手动存档</button>
+                    <button id="btn-manual-load">手动读档</button>
+                    <button id="btn-restart-game">重新开始</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 装备面板 -->
+        <div class="panel" id="equipment-panel">
+            <h2>装备</h2>
+            <div class="equipment-slots">
+                <div class="equipment-slot" data-slot="weapon">
+                    <div class="slot-name">武器</div>
+                    <div class="slot-item" id="equipped-weapon">空</div>
+                </div>
+                <div class="equipment-slot" data-slot="helmet">
+                    <div class="slot-name">头盔</div>
+                    <div class="slot-item" id="equipped-helmet">空</div>
+                </div>
+                <div class="equipment-slot" data-slot="armor">
+                    <div class="slot-name">胸甲</div>
+                    <div class="slot-item" id="equipped-armor">空</div>
+                </div>
+                <div class="equipment-slot" data-slot="legs">
+                    <div class="slot-name">护腿</div>
+                    <div class="slot-item" id="equipped-legs">空</div>
+                </div>
+                <div class="equipment-slot" data-slot="boots">
+                    <div class="slot-name">靴子</div>
+                    <div class="slot-item" id="equipped-boots">空</div>
+                </div>
+            </div>
+            <h3>背包</h3>
+            <div id="inventory"></div>
+            <button class="close-panel">关闭</button>
+        </div>
+
+        <!-- 关卡选择面板 -->
+        <div class="panel" id="stages-panel">
+            <h2>选择关卡</h2>
+            <div id="stage-list"></div>
+            <button class="close-panel">关闭</button>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/game.js"></script>
+</body>
+</html>

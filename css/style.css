@@ -1,0 +1,355 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.game-container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    position: relative;
+    min-height: 100vh;
+}
+
+/* 角色状态栏 */
+.status-bar {
+    background-color: #2c3e50;
+    color: white;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.character-info {
+    font-weight: bold;
+}
+
+.hp-bar {
+    background-color: #34495e;
+    padding: 5px 10px;
+    border-radius: 5px;
+}
+
+/* 主要内容区 */
+.main-content {
+    display: flex;
+    min-height: calc(100vh - 120px);
+}
+
+.battle-log {
+    flex: 1;
+    padding: 15px;
+    border: 1px solid #ddd;
+    height: 100%;
+    /* overflow-y: auto; */
+}
+
+.stage-info {
+    flex: 1;
+    padding: 15px;
+    border: 1px solid #ddd;
+    height: 100%;
+    overflow-y: auto;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 20px;
+    background-color: #ecf0f1;
+    border-radius: 10px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.progress {
+    height: 100%;
+    background-color: #3498db;
+    width: 0%;
+    transition: width 0.5s;
+}
+
+.battle-log {
+    background-color: #f9f9f9;
+    max-height: 380px;
+}
+
+#log-content {
+    /* height: 100%; */
+    max-height: 290px;
+    overflow-y: auto;
+}
+
+#log-content p {
+    margin: 5px 0;
+    padding: 3px 0;
+    border-bottom: 1px solid #eee;
+}
+
+/* 日志选项样式 */
+.log-options {
+    margin-top: 10px;
+    padding-top: 5px;
+    border-top: 1px solid #eee;
+    font-size: 14px;
+}
+
+.log-options label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+}
+
+.log-options input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+/* 底部导航栏 */
+.nav-bar {
+    position: sticky;
+    bottom: 0;
+    background-color: #2c3e50;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px 0;
+}
+
+.nav-bar button {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.nav-bar button:hover {
+    background-color: #2980b9;
+}
+
+/* 面板样式 */
+.panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: white;
+    z-index: 10;
+    padding: 20px;
+    display: none;
+    overflow-y: auto;
+}
+
+.panel h2 {
+    margin-bottom: 20px;
+    color: #2c3e50;
+}
+
+.close-panel {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+/* 装备面板 */
+.equipment-slots {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.equipment-slot {
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.slot-name {
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.slot-item {
+    min-height: 50px;
+    background-color: #f9f9f9;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+#inventory {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.inventory-item {
+    display: inline-block;
+    width: 100px;
+    height: 120px;
+    margin: 5px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.inventory-item:hover {
+    background-color: #f0f0f0;
+}
+
+/* 稀有度颜色 */
+.common { color: #aaa; }
+.uncommon { color: #2ecc71; }
+.rare { color: #3498db; }
+.epic { color: #9b59b6; }
+.legendary { color: #e67e22; }
+
+/* 关卡选择面板 */
+#stage-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.stage-item {
+    border: 1px solid #ddd;
+    padding: 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.stage-item:hover {
+    background-color: #f0f0f0;
+}
+
+.stage-item.active {
+    border-color: #3498db;
+    background-color: #ebf5fb;
+}
+
+.stage-item h3 {
+    margin-bottom: 5px;
+}
+
+/* 响应式设计 */
+@media (max-width: 600px) {
+    .main-content {
+        flex-direction: column;
+    }
+    
+    .equipment-slots, #inventory, #stage-list {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    }
+}
+
+.settings-menu-container {
+    position: relative;
+    display: inline-block;
+}
+
+.settings-menu {
+    display: none;
+    position: absolute;
+    bottom: 100%; /* 将菜单显示在按钮上方 */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f9f9f9;
+    min-width: 100px;
+    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    z-index: 1;
+    border-radius: 5px;
+}
+
+.settings-menu button {
+    color: black;
+    padding: 12px 16px;
+    text-decoration: none;
+    display: block;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.settings-menu button:hover {
+    background-color: #f1f1f1;
+}
+
+.settings-menu-container:hover .settings-menu {
+    display: block;
+}
+
+/* 角色属性面板 */
+.stats-panel {
+    background-color: #34495e;
+    color: white;
+    padding: 5px 10px;
+    position: relative;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out;
+    max-height: 200px;
+}
+
+.stats-panel.collapsed {
+    max-height: 30px;
+}
+
+.stats-title {
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 5px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 5px;
+    font-size: 0.9em;
+}
+
+.stat-item {
+    background-color: #2c3e50;
+    padding: 3px 5px;
+    border-radius: 3px;
+}
+
+.stat-name {
+    font-size: 0.8em;
+    color: #bdc3c7;
+}
+
+.stat-value {
+    font-weight: bold;
+}
+
+.stats-toggle {
+    position: absolute;
+    right: 10px;
+    top: 5px;
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+.stats-panel.collapsed .stats-toggle {
+    transform: rotate(180deg);
+}
