@@ -80,9 +80,9 @@ function initGame() {
     
     // 检查是否已在战斗中，如果是则恢复战斗循环
     if (gameState.battleState.inBattle && gameState.battleState.currentEnemy) {
+        logMessage("恢复战斗...");
         // 直接调用battleLoop恢复战斗
         battleLoop();
-        logMessage("恢复战斗...");
     } else {
         // 不在战斗中，开始新战斗
         gameState.battleState.inBattle = false; // 确保状态正确
@@ -351,10 +351,12 @@ function selectStage(stageId) {
     // 关闭面板
     elements.stagesPanel.style.display = 'none';
     
+    logMessage(`选择了关卡: ${stageData.find(stage => stage.id === stageId).name}`);
+
     // 开始新的战斗
     startBattle();
     
-    logMessage(`选择了关卡: ${stageData.find(stage => stage.id === stageId).name}`);
+    
 }
 
 // 绑定按钮事件
@@ -497,16 +499,11 @@ function handleEnemyDefeat() {
     
     // 生成新敌人并在延迟后继续战斗
     setTimeout(() => {
-        spawnEnemy(); // 生成新敌人
+        gameState.battleState.inBattle = false;
         gameState.battleState.battleProgress = 0; // 重置战斗进度条
         updateUI(); // 更新UI显示新敌人
-
-        // 重新启动战斗循环
-        // 这里的 battleLoop() 调用是在 setTimeout 的回调函数中执行的，
-        // 它会在当前 handleEnemyDefeat 函数执行完毕并返回后，经过指定的延迟时间才运行。
-        // 因此，它不会导致无限的函数调用嵌套（栈溢出）。
-        // 它只是启动了下一轮针对新敌人的战斗循环。
-    }, 1000); // 延迟1秒后生成新敌人并继续战斗
+        startBattle(); // 开始新的战斗
+    }, 2000); // 延迟1秒后生成新敌人并继续战斗
 }
 
 function handlePlayerDefeat() {
@@ -546,6 +543,7 @@ function battleLoop() {
     // 检查敌人是否死亡
     if (gameState.battleState.currentEnemy.hp <= 0) {
         handleEnemyDefeat();
+        return;
     }
     
     // 敌人攻击
