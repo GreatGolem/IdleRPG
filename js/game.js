@@ -38,6 +38,8 @@ let gameState = {
 const elements = {
     characterLevel: document.getElementById('character-level'),
     characterClass: document.getElementById('character-class'),
+    expProgress: document.getElementById('exp-progress'),
+    expText: document.getElementById('exp-text'),
     currentHp: document.getElementById('current-hp'),
     maxHp: document.getElementById('max-hp'),
     stageName: document.getElementById('stage-name'),
@@ -130,6 +132,12 @@ function updateUI() {
     elements.currentHp.textContent = Math.floor(gameState.player.stats.hp);
     elements.maxHp.textContent = Math.floor(gameState.player.stats.maxHp);
     
+    // 更新经验值进度条
+    const expNeeded = getExpForLevel(gameState.player.level);
+    const expProgress = (gameState.player.exp / expNeeded) * 100;
+    document.getElementById('exp-progress').style.width = `${expProgress}%`;
+    document.getElementById('exp-text').textContent = `${gameState.player.exp}/${expNeeded}`;
+
     const currentStage = stageData.find(stage => stage.id === gameState.currentStage);
     elements.stageName.textContent = currentStage.name;
     elements.recommendedLevel.textContent = currentStage.recommendedLevel;

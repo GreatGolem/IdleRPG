@@ -490,3 +490,31 @@ body {
 .pet-action-button.deactivate:hover {
     background-color: #c0392b;
 }
+
+/* 经验值进度条 */
+.exp-bar {
+    width: 150px;
+    height: 15px;
+    background-color: #34495e;
+    border-radius: 7px;
+    margin-top: 5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.exp-progress {
+    height: 100%;
+    background-color: #27ae60;
+    width: 0%;
+    transition: width 0.5s;
+}
+
+.exp-text {
+    position: absolute;
+    top: 0;
+    right: 5px;
+    font-size: 12px;
+    color: white;
+    line-height: 15px;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.5);
+}
