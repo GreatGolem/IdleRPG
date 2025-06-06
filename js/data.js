@@ -149,6 +149,23 @@ const stageData = [
         }
     },
     {
+        id: "forest_2",
+        name: "魔物保护区",
+        area: "幽暗森林",
+        recommendedLevel: 10,
+        monsters: [
+            { type: "pet_sitter", name: "魔物保姆", hp: 45, atk: 15, def: 3, exp: 18, gold: { min: 4, max: 9 } }
+        ],
+        dropTable: {
+            equipment: [
+                { rarity: "common", chance: 0.25 },
+                { rarity: "uncommon", chance: 0.1 },
+                { rarity: "rare", chance: 0.01 }
+            ],
+            petEgg: { chance: 0.5 }
+        }
+    },
+    {
         id: "abyss",
         name: "深渊",
         area: "深渊",

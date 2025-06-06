@@ -4,7 +4,7 @@ let gameState = {
         level: 1,
         exp: 0,
         class: "warrior",
-        stats: { hp: 100, maxHp: 100, atk: 10, def: 5, mp: 0, agi: 3, critRate: 5, critDamage: 1.5 },
+        stats: { hp: 100, maxHp: 100, atk: 10, def: 5, mp: 0, maxMp:0, agi: 3, critRate: 5, critDamage: 1.5 },
         equipment: {
             weapon: null,
             helmet: null,
@@ -18,6 +18,11 @@ let gameState = {
         gold: 0,
         petEggs: []
     },
+
+    pets: [], // 拥有的魔宠列表
+    petEggs: [], // 拥有的魔宠蛋列表
+    activePet: null, // 当前出战的魔宠索引
+
     currentStage: "plains_1",
     battleState: {
         inBattle: false,
@@ -46,7 +51,6 @@ const elements = {
     stagesPanel: document.getElementById('stages-panel'),
     inventory: document.getElementById('inventory'),
     stageList: document.getElementById('stage-list'),
-    // 添加属性面板元素
     statAtk: document.getElementById('stat-atk'),
     statDef: document.getElementById('stat-def'),
     statHp: document.getElementById('stat-hp'),
@@ -55,7 +59,13 @@ const elements = {
     statCritRate: document.getElementById('stat-crit-rate'),
     statCritDamage: document.getElementById('stat-crit-damage'),
     statsPanel: document.getElementById('stats-panel'),
-    statsToggle: document.getElementById('stats-toggle')
+    statsToggle: document.getElementById('stats-toggle'),
+    petsPanel: document.getElementById('pets-panel'),
+    petTabs: document.querySelectorAll('.pet-tab'),
+    petTabContents: document.querySelectorAll('.pet-tab-content'),
+    activePet: document.getElementById('active-pet'),
+    petList: document.getElementById('pet-list'),
+    petEggList: document.getElementById('pet-egg-list'),
 };
 
 // 初始化游戏
@@ -68,6 +78,9 @@ function initGame() {
     
     // 初始化装备面板
     initEquipmentPanel();
+
+    // 初始化魔宠面板
+    initPetsPanel();
     
     // 初始化关卡选择面板
     initStagesPanel();
@@ -288,17 +301,36 @@ function updatePlayerStats() {
             });
         }
     }
+
+    // 计算魔宠提供的属性加成
+    let petBonusStats = {
+        atk: 0,
+        hp: 0,
+        def: 0,
+        critRate: 0,
+        critDamage: 0,
+        dropRate: 0,
+        goldFind: 0,
+        expFind: 0
+    };
     
+    if (gameState.activePet !== null && gameState.pets[gameState.activePet]) {
+        petBonusStats = getPetBonusStats(gameState.pets[gameState.activePet]);
+    }
+
     // 计算最终属性
     gameState.player.stats = {
-        hp: Math.floor((baseStats.hp + equipStats.hp) * (1 + percentBonuses.hp / 100)),
-        maxHp: Math.floor((baseStats.hp + equipStats.hp) * (1 + percentBonuses.hp / 100)),
-        atk: Math.floor((baseStats.atk + equipStats.atk) * (1 + percentBonuses.atk / 100)),
-        def: Math.floor((baseStats.def + equipStats.def) * (1 + percentBonuses.def / 100)),
-        mp: Math.floor((baseStats.mp + equipStats.mp) * (1 + percentBonuses.mp / 100)),
-        agi: Math.floor((baseStats.agi + equipStats.agi) * (1 + percentBonuses.agi / 100)),
-        critRate: baseStats.critRate + equipStats.critRate,
-        critDamage: baseStats.critDamage + equipStats.critDamage
+        atk: baseStats.atk  + petBonusStats.atk + equipStats.atk,
+        def: baseStats.def  + petBonusStats.def + equipStats.def,
+        maxHp: baseStats.hp + petBonusStats.hp + equipStats.hp,
+        hp: baseStats.hp + petBonusStats.hp + equipStats.hp,
+        mp: baseStats.mp + equipStats.mp,
+        agi: baseStats.agi + equipStats.agi,
+        critRate: baseStats.critRate + equipStats.critRate + petBonusStats.critRate,
+        critDamage: baseStats.critDamage + equipStats.critDamage + petBonusStats.critDamage,
+        dropRate: petBonusStats.dropRate || 0,
+        goldFind: petBonusStats.goldFind || 0,
+        expFind: petBonusStats.expFind || 0
     };
     
     // 更新属性面板
@@ -314,6 +346,244 @@ function updateStatsPanel() {
     elements.statAgi.textContent = Math.floor(gameState.player.stats.agi);
     elements.statCritRate.textContent = gameState.player.stats.critRate + '%';
     elements.statCritDamage.textContent = (gameState.player.stats.critDamage * 100) + '%';
+}
+
+function initPetsPanel() {
+    // if (!gameState.pets) gameState.pets = [];
+    // if (!gameState.petEggs) gameState.petEggs = [];
+    // if (gameState.activePet === undefined) gameState.activePet = null;
+    updatePetsPanel();
+}
+
+// 更新魔宠面板
+function updatePetsPanel() {
+    // 更新出战魔宠
+    updateActivePet();
+    
+    // 更新魔宠列表
+    updatePetList();
+    
+    // 更新魔宠蛋列表
+    updatePetEggList();
+}
+
+// 更新出战魔宠显示
+function updateActivePet() {
+    if (gameState.activePet !== null && gameState.pets[gameState.activePet]) {
+        const pet = gameState.pets[gameState.activePet];
+        const petType = petTypeData[pet.type];
+        const petRarity = petRarityData[pet.rarity];
+        const activeSkill = petActiveSkillData[pet.activeSkill.id];
+        
+        let passiveSkillsHtml = '';
+        pet.passiveSkills.forEach(skill => {
+            const skillInfo = petPassiveSkillData[skill.id];
+            passiveSkillsHtml += `
+                <div class="pet-skill">
+                    ${skillInfo.name}: ${skillInfo.description.replace('{value}', skill.value)}
+                </div>
+            `;
+        });
+        
+        elements.activePet.innerHTML = `
+            <div class="pet-item active">
+                <div class="pet-name">${pet.name} Lv.${pet.level}</div>
+                <div class="pet-type" style="background-color: ${petType.color}">
+                    ${petType.icon} ${petType.name}
+                </div>
+                <div class="pet-rarity" style="color: ${petRarity.color}">
+                    ${petRarity.name}
+                </div>
+                <div class="pet-stats">
+                    攻击: ${pet.stats.atk} | 生命: ${pet.stats.hp} | 防御: ${pet.stats.def}
+                </div>
+                <div class="pet-exp">
+                    经验: ${pet.exp}/${getPetExpForLevel(pet.level)}
+                </div>
+                <div class="pet-skills">
+                    <div class="pet-skill">
+                        主动技能: ${activeSkill.name} - ${activeSkill.description.replace('{value}', Math.floor(activeSkill.damageMultiplier * 100))}
+                    </div>
+                    ${passiveSkillsHtml}
+                </div>
+                <div class="pet-action-buttons">
+                    <button class="pet-action-button deactivate" data-index="${gameState.activePet}">取消出战</button>
+                </div>
+            </div>
+        `;
+        
+        // 绑定取消出战按钮事件
+        elements.activePet.querySelector('.deactivate').addEventListener('click', (e) => {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            deactivatePet(index);
+            e.stopPropagation();
+        });
+    } else {
+        elements.activePet.innerHTML = `<div class="no-pet">未选择出战魔宠</div>`;
+    }
+}
+
+// 更新魔宠列表
+function updatePetList() {
+    elements.petList.innerHTML = "";
+    
+    if (gameState.pets.length === 0) {
+        elements.petList.innerHTML = `<div class="no-pet">暂无魔宠</div>`;
+        return;
+    }
+    
+    gameState.pets.forEach((pet, index) => {
+        const petType = petTypeData[pet.type];
+        const petRarity = petRarityData[pet.rarity];
+        const activeSkill = petActiveSkillData[pet.activeSkill.id];
+        
+        let passiveSkillsHtml = '';
+        pet.passiveSkills.forEach(skill => {
+            const skillInfo = petPassiveSkillData[skill.id];
+            passiveSkillsHtml += `
+                <div class="pet-skill">
+                    ${skillInfo.name}: ${skillInfo.description.replace('{value}', skill.value)}
+                </div>
+            `;
+        });
+        
+        const petElement = document.createElement('div');
+        petElement.className = `pet-item ${pet.isActive ? 'active' : ''}`;
+        petElement.innerHTML = `
+            <div class="pet-name">${pet.name} Lv.${pet.level}</div>
+            <div class="pet-type" style="background-color: ${petType.color}">
+                ${petType.icon} ${petType.name}
+            </div>
+            <div class="pet-rarity" style="color: ${petRarity.color}">
+                ${petRarity.name}
+            </div>
+            <div class="pet-stats">
+                攻击: ${pet.stats.atk} | 生命: ${pet.stats.hp} | 防御: ${pet.stats.def}
+            </div>
+            <div class="pet-exp">
+                经验: ${pet.exp}/${getPetExpForLevel(pet.level)}
+            </div>
+            <div class="pet-skills">
+                <div class="pet-skill">
+                    主动技能: ${activeSkill.name} - ${activeSkill.description.replace('{value}', Math.floor(activeSkill.damageMultiplier * 100))}
+                </div>
+                ${passiveSkillsHtml}
+            </div>
+            <div class="pet-action-buttons">
+                ${pet.isActive ? 
+                    `<button class="pet-action-button deactivate" data-index="${index}">取消出战</button>` : 
+                    `<button class="pet-action-button activate" data-index="${index}">出战</button>`
+                }
+            </div>
+        `;
+        
+        elements.petList.appendChild(petElement);
+    });
+    
+    // 绑定出战/取消出战按钮事件
+    elements.petList.querySelectorAll('.activate').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            activatePet(index);
+            e.stopPropagation();
+        });
+    });
+    
+    elements.petList.querySelectorAll('.deactivate').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            deactivatePet(index);
+            e.stopPropagation();
+        });
+    });
+}
+
+// 更新魔宠蛋列表
+function updatePetEggList() {
+    elements.petEggList.innerHTML = "";
+    
+    if (gameState.petEggs.length === 0) {
+        elements.petEggList.innerHTML = `<div class="no-pet">暂无魔宠蛋</div>`;
+        return;
+    }
+    
+    gameState.petEggs.forEach((egg, index) => {
+        const eggInfo = petEggData[egg.rarity];
+        
+        const eggElement = document.createElement('div');
+        eggElement.className = 'pet-egg-item';
+        eggElement.innerHTML = `
+            <div class="pet-egg-name" style="color: ${rarityData[egg.rarity].color}">
+                ${eggInfo.name}
+            </div>
+            <button class="pet-egg-hatch" data-index="${index}">孵化</button>
+        `;
+        
+        elements.petEggList.appendChild(eggElement);
+    });
+    
+    // 绑定孵化按钮事件
+    elements.petEggList.querySelectorAll('.pet-egg-hatch').forEach(button => {
+        button.addEventListener('click', (e) => {
+            const index = parseInt(e.target.getAttribute('data-index'));
+            hatchEgg(index);
+            e.stopPropagation();
+        });
+    });
+}
+
+// 激活魔宠（出战）
+function activatePet(index) {
+    // 先取消当前出战的魔宠
+    if (gameState.activePet !== null) {
+        gameState.pets[gameState.activePet].isActive = false;
+    }
+    
+    // 设置新的出战魔宠
+    gameState.pets[index].isActive = true;
+    gameState.activePet = index;
+    
+    // 更新魔宠面板
+    updatePetsPanel();
+    
+    // 更新玩家属性（应用魔宠加成）
+    updatePlayerStats();
+    
+    logMessage(`${gameState.pets[index].name} 已出战！`);
+}
+
+// 取消魔宠出战
+function deactivatePet(index) {
+    gameState.pets[index].isActive = false;
+    
+    if (gameState.activePet === index) {
+        gameState.activePet = null;
+    }
+    
+    // 更新魔宠面板
+    updatePetsPanel();
+    
+    // 更新玩家属性（移除魔宠加成）
+    updatePlayerStats();
+    
+    logMessage(`${gameState.pets[index].name} 已取消出战！`);
+}
+
+// 孵化魔宠蛋
+function hatchEgg(index) {
+    const egg = gameState.petEggs[index];
+    const pet = hatchPetEgg(egg.rarity, gameState.player.level);
+    
+    // 添加到魔宠列表
+    gameState.pets.push(pet);
+    
+    // 移除魔宠蛋
+    gameState.petEggs.splice(index, 1);
+    
+    // 更新魔宠面板
+    updatePetsPanel();
+    
+    logMessage(`孵化成功！获得了 ${pet.name}！`);
 }
 
 // 初始化关卡选择面板
@@ -343,6 +613,9 @@ function selectStage(stageId) {
     gameState.battleState.inBattle = false;
     gameState.battleState.currentEnemy = null;
     gameState.battleState.battleProgress = 0;
+    gameState.player.stats.hp = gameState.player.stats.maxHp;
+    gameState.player.stats.mp = gameState.player.stats.maxMp;
+
     
     // 更新UI
     initStagesPanel();
@@ -365,6 +638,26 @@ function bindEvents() {
     document.getElementById('btn-equipment').addEventListener('click', () => {
         updateInventory();
         elements.equipmentPanel.style.display = 'block';
+    });
+
+    // 魔宠按钮
+    document.getElementById('btn-pets').addEventListener('click', () => {
+        updatePetsPanel();
+        elements.petsPanel.style.display = 'block';
+    });
+
+    // 魔宠面板标签切换
+    elements.petTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // 移除所有标签的active类
+            elements.petTabs.forEach(t => t.classList.remove('active'));
+            elements.petTabContents.forEach(c => c.classList.remove('active'));
+            
+            // 添加当前标签的active类
+            tab.classList.add('active');
+            const tabId = tab.getAttribute('data-tab');
+            document.getElementById(`${tabId}-content`).classList.add('active');
+        });
     });
     
     // 关卡选择按钮
@@ -540,6 +833,28 @@ function battleLoop() {
     
     logMessage(`你对 ${gameState.battleState.currentEnemy.name} 造成 ${playerDamage} 点${isCritical ? '暴击' : ''}伤害`);
     
+    // 魔宠技能攻击
+    if (gameState.activePet !== null && gameState.pets[gameState.activePet]) {
+        const pet = gameState.pets[gameState.activePet];
+        const skill = pet.activeSkill;
+        
+        // 检查技能冷却
+        if (skill.cooldown <= 0) {
+            const skillInfo = petActiveSkillData[skill.id];
+            const skillDamage = calculatePetSkillDamage(pet, skill, gameState.player.stats);
+            
+            gameState.battleState.currentEnemy.hp -= skillDamage;
+            
+            logMessage(`${pet.name} 使用 ${skillInfo.name} 对 ${gameState.battleState.currentEnemy.name} 造成 ${skillDamage} 点伤害`);
+            
+            // 设置技能冷却
+            skill.cooldown = skillInfo.cooldown;
+        } else {
+            // 减少冷却时间
+            skill.cooldown--;
+        }
+    }
+
     // 检查敌人是否死亡
     if (gameState.battleState.currentEnemy.hp <= 0) {
         handleEnemyDefeat();
@@ -595,17 +910,27 @@ function dropEquipment() {
     const currentStage = stageData.find(stage => stage.id === gameState.currentStage);
     const dropTable = currentStage.dropTable.equipment;
     
-    // 随机决定是否掉落装备
+    // 获取魔宠提供的掉落加成
+    let dropRateBonus = 0;
+    if (gameState.activePet !== null && gameState.pets[gameState.activePet]) {
+        const petBonusStats = getPetBonusStats(gameState.pets[gameState.activePet]);
+        dropRateBonus = petBonusStats.dropRate || 0;
+    }
+    
+    // 随机决定是否掉落装备，考虑魔宠加成
     let dropRoll = Math.random();
     let droppedItem = null;
     
     for (const drop of dropTable) {
-        if (dropRoll < drop.chance) {
+        // 应用魔宠掉落加成
+        const adjustedChance = drop.chance * (1 + dropRateBonus);
+        
+        if (dropRoll < adjustedChance) {
             // 生成装备
             droppedItem = generateEquipment(drop.rarity, gameState.player.level);
             break;
         }
-        dropRoll -= drop.chance;
+        dropRoll -= adjustedChance;
     }
     
     if (droppedItem) {
@@ -613,6 +938,28 @@ function dropEquipment() {
         gameState.inventory.equipment.push(droppedItem);
         
         logMessage(`掉落了 [${rarityData[droppedItem.rarity].name}]${equipmentTypes[droppedItem.type].name}`);
+    }
+    
+    // 检查是否掉落魔宠蛋
+    if (currentStage.dropTable.petEgg) {
+        const petEggChance = currentStage.dropTable.petEgg.chance * (1 + dropRateBonus);
+        
+        if (Math.random() < petEggChance) {
+            // 决定魔宠蛋品质
+            let eggRarity;
+            const rarityRoll = Math.random();
+            
+            if (rarityRoll < 0.6) eggRarity = "common";
+            else if (rarityRoll < 0.85) eggRarity = "uncommon";
+            else if (rarityRoll < 0.95) eggRarity = "rare";
+            else if (rarityRoll < 0.99) eggRarity = "epic";
+            else eggRarity = "legendary";
+            
+            // 添加魔宠蛋到列表
+            gameState.petEggs.push({ rarity: eggRarity });
+            
+            logMessage(`掉落了 ${petEggData[eggRarity].name}!`);
+        }
     }
 }
 

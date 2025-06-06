@@ -126,6 +126,32 @@
             <button class="close-panel">关闭</button>
         </div>
 
+        <!-- 魔宠面板 -->
+        <div class="panel" id="pets-panel">
+            <h2>魔宠系统</h2>
+            <div class="pet-tabs">
+                <button class="pet-tab active" data-tab="my-pets">我的魔宠</button>
+                <button class="pet-tab" data-tab="pet-eggs">魔宠蛋</button>
+            </div>
+            
+            <div class="pet-tab-content active" id="my-pets-content">
+                <div class="active-pet-container">
+                    <h3>出战魔宠</h3>
+                    <div id="active-pet">未选择出战魔宠</div>
+                </div>
+                
+                <h3>魔宠列表</h3>
+                <div id="pet-list"></div>
+            </div>
+            
+            <div class="pet-tab-content" id="pet-eggs-content">
+                <h3>魔宠蛋</h3>
+                <div id="pet-egg-list"></div>
+            </div>
+            
+            <button class="close-panel">关闭</button>
+        </div>
+
         <!-- 关卡选择面板 -->
         <div class="panel" id="stages-panel">
             <h2>选择关卡</h2>
@@ -135,6 +161,7 @@
     </div>
 
     <script src="js/data.js"></script>
+    <script src="js/pet.js"></script>
     <script src="js/game.js"></script>
 </body>
 </html>
