@@ -126,6 +126,54 @@
                 </div>
             </div>
             <h3>背包</h3>
+            <div class="inventory-controls">
+                <div class="filter-controls">
+                    <select id="filter-slot">
+                        <option value="all">全部部位</option>
+                        <option value="weapon">武器</option>
+                        <option value="helmet">头盔</option>
+                        <option value="armor">胸甲</option>
+                        <option value="legs">护腿</option>
+                        <option value="boots">靴子</option>
+                    </select>
+                    <select id="filter-rarity">
+                        <option value="all">全部品质</option>
+                        <option value="common">普通</option>
+                        <option value="uncommon">优秀</option>
+                        <option value="rare">精良</option>
+                        <option value="epic">史诗</option>
+                        <option value="legendary">传说</option>
+                    </select>
+                    <select id="filter-affix">
+                        <option value="all">全部词条</option>
+                        <option value="atkPercent">攻击力</option>
+                        <option value="hpPercent">生命值</option>
+                        <option value="defPercent">防御力</option>
+                        <option value="critRate">暴击率</option>
+                        <option value="attackSpeed">攻击速度</option>
+                        <option value="bleedChance">流血几率</option>
+                        <option value="lifeSteal">生命偷取</option>
+                        <option value="eliteDamage">精英伤害</option>
+                        <option value="goldFind">金币获取</option>
+                    </select>
+                </div>
+                <div class="sort-controls">
+                    <select id="sort-by">
+                        <option value="none">排序方式</option>
+                        <option value="mainStat">主属性</option>
+                        <option value="rarity">品质</option>
+                        <option value="newest">最新获得</option>
+                    </select>
+                </div>
+                <div class="discard-controls">
+                    <button id="btn-discard-mode">丢弃</button>
+                </div>
+            </div>
+            <div id="discard-mode-controls" style="display: none;">
+                <button id="btn-discard-selected">丢弃选中物品</button>
+                <button id="btn-select-all">选中当前所有</button>
+                <button id="btn-cancel-discard">取消</button>
+            </div>
             <div id="inventory"></div>
             <button class="close-panel">关闭</button>
         </div>

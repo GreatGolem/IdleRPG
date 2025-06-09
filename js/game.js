@@ -16,7 +16,14 @@ let gameState = {
     inventory: {
         equipment: [],
         gold: 0,
-        petEggs: []
+        petEggs: [],
+        filters: {
+            slot: 'all',
+            rarity: 'all',
+            affix: 'all'
+        },
+        sort: 'none',
+        discardMode: false
     },
 
     pets: [], // 拥有的魔宠列表
@@ -68,6 +75,15 @@ const elements = {
     activePet: document.getElementById('active-pet'),
     petList: document.getElementById('pet-list'),
     petEggList: document.getElementById('pet-egg-list'),
+    filterSlot: document.getElementById('filter-slot'),
+    filterRarity: document.getElementById('filter-rarity'),
+    filterAffix: document.getElementById('filter-affix'),
+    sortBy: document.getElementById('sort-by'),
+    btnDiscardMode: document.getElementById('btn-discard-mode'),
+    discardModeControls: document.getElementById('discard-mode-controls'),
+    btnDiscardSelected: document.getElementById('btn-discard-selected'),
+    btnSelectAll: document.getElementById('btn-select-all'),
+    btnCancelDiscard: document.getElementById('btn-cancel-discard'),
 };
 
 // 初始化游戏
@@ -201,15 +217,88 @@ function initEquipmentPanel() {
 function updateInventory() {
     elements.inventory.innerHTML = "";
     
-    gameState.inventory.equipment.forEach((item, index) => {
+    // 应用筛选
+    let filteredItems = gameState.inventory.equipment.filter(item => {
+        // 筛选部位
+        if (gameState.inventory.filters.slot !== 'all' && item.type !== gameState.inventory.filters.slot) {
+            return false;
+        }
+        
+        // 筛选品质
+        if (gameState.inventory.filters.rarity !== 'all' && item.rarity !== gameState.inventory.filters.rarity) {
+            return false;
+        }
+        
+        // 筛选词条
+        if (gameState.inventory.filters.affix !== 'all') {
+            // 检查物品是否有指定词条
+            if (!item.affixes || !item.affixes.some(affix => affix.id === gameState.inventory.filters.affix)) {
+                return false;
+            }
+        }
+        
+        return true;
+    });
+    
+    // 应用排序
+    if (gameState.inventory.sort !== 'none') {
+        filteredItems.sort((a, b) => {
+            switch (gameState.inventory.sort) {
+                case 'mainStat':
+                    // 根据主属性排序（攻击力、防御力或生命值）
+                    const getMainStat = (item) => {
+                        if (item.type === 'weapon') return item.stats.atk || 0;
+                        if (item.type === 'armor' || item.type === 'helmet') return item.stats.def || 0;
+                        return item.stats.hp || 0;
+                    };
+                    return getMainStat(b) - getMainStat(a); // 从高到低
+                
+                case 'rarity':
+                    // 根据品质排序
+                    const rarityOrder = {
+                        'legendary': 5,
+                        'epic': 4,
+                        'rare': 3,
+                        'uncommon': 2,
+                        'common': 1
+                    };
+                    return rarityOrder[b.rarity] - rarityOrder[a.rarity]; // 从高到低
+                
+                case 'newest':
+                    // 假设物品有一个index属性表示获得顺序
+                    // 如果没有，可以使用数组索引作为替代
+                    const indexA = gameState.inventory.equipment.indexOf(a);
+                    const indexB = gameState.inventory.equipment.indexOf(b);
+                    return indexB - indexA; // 从新到旧
+            }
+        });
+    }
+    
+    // 显示筛选后的物品
+    filteredItems.forEach((item, index) => {
         const itemElement = document.createElement('div');
         itemElement.className = `inventory-item ${item.rarity}`;
+        if (gameState.inventory.discardMode) {
+            itemElement.classList.add('discard-mode');
+            if (item.selected) {
+                itemElement.classList.add('selected');
+            }
+        }
         itemElement.innerHTML = generateEquipmentHTML(item);
-        itemElement.dataset.index = index;
+        itemElement.dataset.index = gameState.inventory.equipment.indexOf(item); // 使用原始索引
         
-        itemElement.addEventListener('click', () => {
-            equipItem(index);
-        });
+        if (gameState.inventory.discardMode) {
+            // 在丢弃模式下，点击物品会选中/取消选中
+            itemElement.addEventListener('click', () => {
+                item.selected = !item.selected;
+                updateInventory(); // 刷新显示
+            });
+        } else {
+            // 正常模式下，点击物品会装备
+            itemElement.addEventListener('click', () => {
+                equipItem(parseInt(itemElement.dataset.index));
+            });
+        }
         
         elements.inventory.appendChild(itemElement);
     });
@@ -691,6 +780,97 @@ function bindEvents() {
     // 属性面板折叠/展开
     elements.statsToggle.addEventListener('click', () => {
         elements.statsPanel.classList.toggle('collapsed');
+    });
+    
+    // 筛选和排序事件
+    elements.filterSlot.addEventListener('change', () => {
+        gameState.inventory.filters.slot = elements.filterSlot.value;
+        updateInventory();
+    });
+    
+    elements.filterRarity.addEventListener('change', () => {
+        gameState.inventory.filters.rarity = elements.filterRarity.value;
+        updateInventory();
+    });
+    
+    elements.filterAffix.addEventListener('change', () => {
+        gameState.inventory.filters.affix = elements.filterAffix.value;
+        updateInventory();
+    });
+    
+    elements.sortBy.addEventListener('change', () => {
+        gameState.inventory.sort = elements.sortBy.value;
+        updateInventory();
+    });
+    
+    // 丢弃模式
+    elements.btnDiscardMode.addEventListener('click', () => {
+        gameState.inventory.discardMode = true;
+        elements.discardModeControls.style.display = 'flex';
+        // 重置所有物品的选中状态
+        gameState.inventory.equipment.forEach(item => {
+            item.selected = false;
+        });
+        updateInventory();
+    });
+    
+    elements.btnCancelDiscard.addEventListener('click', () => {
+        gameState.inventory.discardMode = false;
+        elements.discardModeControls.style.display = 'none';
+        updateInventory();
+    });
+    
+    elements.btnSelectAll.addEventListener('click', () => {
+        // 选中当前筛选可见的所有物品
+        const visibleItems = gameState.inventory.equipment.filter(item => {
+            // 复制筛选逻辑
+            if (gameState.inventory.filters.slot !== 'all' && item.type !== gameState.inventory.filters.slot) {
+                return false;
+            }
+            
+            if (gameState.inventory.filters.rarity !== 'all' && item.rarity !== gameState.inventory.filters.rarity) {
+                return false;
+            }
+            
+            if (gameState.inventory.filters.affix !== 'all') {
+                if (!item.affixes || !item.affixes.some(affix => affix.id === gameState.inventory.filters.affix)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        });
+        
+        visibleItems.forEach(item => {
+            item.selected = true;
+        });
+        
+        updateInventory();
+    });
+    
+    elements.btnDiscardSelected.addEventListener('click', () => {
+        const selectedItems = gameState.inventory.equipment.filter(item => item.selected);
+        
+        if (selectedItems.length === 0) {
+            logMessage("没有选中任何物品");
+            return;
+        }
+        
+        if (confirm(`确定要丢弃 ${selectedItems.length} 件物品吗？`)) {
+            // 从后往前删除，避免索引变化问题
+            for (let i = gameState.inventory.equipment.length - 1; i >= 0; i--) {
+                if (gameState.inventory.equipment[i].selected) {
+                    gameState.inventory.equipment.splice(i, 1);
+                }
+            }
+            
+            logMessage(`已丢弃 ${selectedItems.length} 件物品`);
+            
+            // 退出丢弃模式
+            gameState.inventory.discardMode = false;
+            elements.discardModeControls.style.display = 'none';
+            updateInventory();
+        }
     });
 }
 
