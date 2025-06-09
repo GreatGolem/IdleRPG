@@ -603,3 +603,56 @@ body {
     line-height: 20px;
     font-weight: bold;
 }
+
+/* 放生模式样式 */
+.pet-release-controls {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+.pet-action-button.release {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.pet-action-button.release:hover {
+    background-color: #c0392b;
+}
+
+.pet-action-button.cancel {
+    background-color: #7f8c8d;
+    color: white;
+}
+
+.pet-item.release-mode {
+    position: relative;
+}
+
+.pet-item.release-mode .pet-checkbox {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 20px;
+    height: 20px;
+    border: 2px solid #ddd;
+    background-color: white;
+    border-radius: 3px;
+}
+
+.pet-item.release-mode.selected .pet-checkbox {
+    background-color: #2ecc71;
+    content: '✓';
+    text-align: center;
+    line-height: 18px;
+    color: white;
+}
+
+.pet-item.release-mode.selected .pet-checkbox:after {
+    content: '✓';
+    position: absolute;
+    top: 0;
+    left: 4px;
+    color: white;
+    font-size: 14px;
+}

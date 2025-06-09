@@ -29,6 +29,7 @@ let gameState = {
     pets: [], // 拥有的魔宠列表
     petEggs: [], // 拥有的魔宠蛋列表
     activePet: null, // 当前出战的魔宠索引
+    releaseMode: false, // 魔宠放生模式
 
     currentStage: "plains_1",
     battleState: {
@@ -449,6 +450,8 @@ function initPetsPanel() {
     // if (!gameState.pets) gameState.pets = [];
     // if (!gameState.petEggs) gameState.petEggs = [];
     // if (gameState.activePet === undefined) gameState.activePet = null;
+    // 初始化放生模式状态
+    if (gameState.releaseMode === undefined) gameState.releaseMode = false;
     updatePetsPanel();
 }
 
@@ -462,6 +465,45 @@ function updatePetsPanel() {
     
     // 更新魔宠蛋列表
     updatePetEggList();
+    
+    // 添加放生按钮和控制区域
+    const myPetsContent = document.getElementById('my-pets-content');
+    
+    // 移除旧的放生控制区域（如果存在）
+    const oldReleaseControls = document.getElementById('pet-release-controls');
+    if (oldReleaseControls) {
+        oldReleaseControls.remove();
+    }
+    
+    // 创建放生控制区域
+    const releaseControls = document.createElement('div');
+    releaseControls.id = 'pet-release-controls';
+    releaseControls.className = 'pet-release-controls';
+    
+    if (!gameState.releaseMode) {
+        // 非放生模式下，只显示放生按钮
+        releaseControls.innerHTML = `
+            <button id="btn-release-mode" class="pet-action-button release">放生</button>
+        `;
+    } else {
+        // 放生模式下，显示放生选中和取消按钮
+        releaseControls.innerHTML = `
+            <button id="btn-release-selected" class="pet-action-button release">放生选中魔宠</button>
+            <button id="btn-cancel-release" class="pet-action-button cancel">取消</button>
+        `;
+    }
+    
+    // 将控制区域插入到魔宠列表前面
+    const petListHeading = myPetsContent.querySelectorAll('h3')[1];
+    myPetsContent.insertBefore(releaseControls, petListHeading.nextSibling);
+    
+    // 绑定按钮事件
+    if (!gameState.releaseMode) {
+        document.getElementById('btn-release-mode').addEventListener('click', toggleReleaseMode);
+    } else {
+        document.getElementById('btn-release-selected').addEventListener('click', releaseSelectedPets);
+        document.getElementById('btn-cancel-release').addEventListener('click', toggleReleaseMode);
+    }
 }
 
 // 更新出战魔宠显示
@@ -545,8 +587,16 @@ function updatePetList() {
         });
         
         const petElement = document.createElement('div');
-        petElement.className = `pet-item ${pet.isActive ? 'active' : ''}`;
+        petElement.className = `pet-item ${pet.isActive ? 'active' : ''} ${gameState.releaseMode ? 'release-mode' : ''}`;
+        if (gameState.releaseMode && pet.selected) {
+            petElement.classList.add('selected');
+        }
+        
+        // 在放生模式下添加勾选框
+        const checkboxHtml = gameState.releaseMode ? `<div class="pet-checkbox"></div>` : '';
+        
         petElement.innerHTML = `
+            ${checkboxHtml}
             <div class="pet-name">${pet.name} Lv.${pet.level}</div>
             <div class="pet-type" style="background-color: ${petType.color}">
                 ${petType.icon} ${petType.name}
@@ -567,32 +617,45 @@ function updatePetList() {
                 ${passiveSkillsHtml}
             </div>
             <div class="pet-action-buttons">
-                ${pet.isActive ? 
-                    `<button class="pet-action-button deactivate" data-index="${index}">取消出战</button>` : 
-                    `<button class="pet-action-button activate" data-index="${index}">出战</button>`
+                ${!gameState.releaseMode ? 
+                    (pet.isActive ? 
+                        `<button class="pet-action-button deactivate" data-index="${index}">取消出战</button>` : 
+                        `<button class="pet-action-button activate" data-index="${index}">出战</button>`
+                    ) : ''
                 }
             </div>
         `;
         
         elements.petList.appendChild(petElement);
+        
+        // 在放生模式下，点击魔宠会选中/取消选中
+        if (gameState.releaseMode) {
+            petElement.addEventListener('click', () => {
+                pet.selected = !pet.selected;
+                updatePetList(); // 刷新显示
+            });
+        }
     });
     
-    // 绑定出战/取消出战按钮事件
-    elements.petList.querySelectorAll('.activate').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const index = parseInt(e.target.getAttribute('data-index'));
-            activatePet(index);
-            e.stopPropagation();
+    // 只在非放生模式下绑定出战/取消出战按钮事件
+    if (!gameState.releaseMode) {
+        // 绑定出战/取消出战按钮事件
+        elements.petList.querySelectorAll('.activate').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                activatePet(index);
+                e.stopPropagation();
+            });
         });
-    });
-    
-    elements.petList.querySelectorAll('.deactivate').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const index = parseInt(e.target.getAttribute('data-index'));
-            deactivatePet(index);
-            e.stopPropagation();
+        
+        elements.petList.querySelectorAll('.deactivate').forEach(button => {
+            button.addEventListener('click', (e) => {
+                const index = parseInt(e.target.getAttribute('data-index'));
+                deactivatePet(index);
+                e.stopPropagation();
+            });
         });
-    });
+    }
 }
 
 // 更新魔宠蛋列表
@@ -681,6 +744,58 @@ function hatchEgg(index) {
     updatePetsPanel();
     
     logMessage(`孵化成功！获得了 ${pet.name}！`);
+}
+
+// 切换放生模式
+function toggleReleaseMode() {
+    gameState.releaseMode = !gameState.releaseMode;
+    
+    // 重置所有魔宠的选中状态
+    if (gameState.releaseMode) {
+        gameState.pets.forEach(pet => {
+            pet.selected = false;
+        });
+    }
+    
+    // 更新魔宠面板
+    updatePetsPanel();
+}
+
+// 放生选中的魔宠
+function releaseSelectedPets() {
+    // 检查是否有选中的魔宠
+    const selectedPets = gameState.pets.filter(pet => pet.selected);
+    
+    if (selectedPets.length === 0) {
+        alert('请先选择要放生的魔宠');
+        return;
+    }
+    
+    // 确认放生
+    if (confirm(`确定要放生选中的 ${selectedPets.length} 只魔宠吗？此操作不可撤销！`)) {
+        // 记录放生的魔宠名称
+        const releasedNames = selectedPets.map(pet => pet.name).join('、');
+        
+        // 移除选中的魔宠
+        gameState.pets = gameState.pets.filter(pet => !pet.selected);
+        
+        // 如果放生了当前出战的魔宠，重置出战状态
+        if (gameState.activePet !== null && gameState.pets[gameState.activePet] === undefined) {
+            gameState.activePet = null;
+        }
+        
+        // 更新玩家属性（移除魔宠加成）
+        updatePlayerStats();
+        
+        // 记录日志
+        logMessage(`已放生魔宠：${releasedNames}`);
+        
+        // 退出放生模式
+        gameState.releaseMode = false;
+        
+        // 更新魔宠面板
+        updatePetsPanel();
+    }
 }
 
 // 初始化关卡选择面板
