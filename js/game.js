@@ -1404,9 +1404,9 @@ function battleLoop() {
     }
     
     // 应用主动技能
-    const activeSkillId = gameState.skills.activeSkill;
-    const skillType = typelessskillData[activeSkillId].skillType;
+    const activeSkillId = gameState.skills.activeSkill; 
     if (activeSkillId && typelessskillData[activeSkillId].type === 'active') {
+        const skillType = typelessskillData[activeSkillId].skillType;
         // 检查技能冷却
         if (gameState.skills.cooldowns[activeSkillId] === 0) {
             const skillLevel = gameState.skills.learned[activeSkillId];
