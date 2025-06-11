@@ -31,12 +31,29 @@ let gameState = {
     activePet: null, // 当前出战的魔宠索引
     releaseMode: false, // 魔宠放生模式
 
+    skills: {
+        learned: {},
+        activeSkill: null,
+        skillPoints: 0,
+        cooldowns: {}
+    },
+
     currentStage: "plains_1",
     battleState: {
         inBattle: false,
         currentEnemy: null,
         battleProgress: 0,
-        killCount: 0
+        killCount: 0,
+        stunDuration: 0,       // 眩晕持续时间
+        dotDamage: 0,          // 持续伤害值
+        dotDuration: 0,        // 持续伤害持续时间
+        atkBoost: 0,           // 攻击力提升百分比
+        atkBoostDuration: 0,   // 攻击力提升持续时间
+        damageReduction: 0,    // 伤害减免百分比
+        damageReductionDuration: 0, // 伤害减免持续时间
+        shield: 0,             // 护盾值
+        shieldDuration: 0,     // 护盾持续时间
+        slowAmount: 0          // 减速百分比
     },
     idleTime: 0,
     startTime: Date.now()
@@ -85,6 +102,14 @@ const elements = {
     btnDiscardSelected: document.getElementById('btn-discard-selected'),
     btnSelectAll: document.getElementById('btn-select-all'),
     btnCancelDiscard: document.getElementById('btn-cancel-discard'),
+    skillsPanel: document.getElementById('skills-panel'),
+    skillTabs: document.querySelectorAll('.skill-tab'),
+    skillTabContents: document.querySelectorAll('.skill-tab-content'),
+    activeSkill: document.getElementById('active-skill'),
+    skillPoints: document.getElementById('skill-points'),
+    meleeSkillTree: document.getElementById('melee-skill-tree'),
+    rangedSkillTree: document.getElementById('ranged-skill-tree'),
+    magicSkillTree: document.getElementById('magic-skill-tree'),
 };
 
 // 初始化游戏
@@ -103,6 +128,9 @@ function initGame() {
     
     // 初始化关卡选择面板
     initStagesPanel();
+
+    // 初始化技能面板
+    initSkillsPanel();
     
     // 绑定按钮事件
     bindEvents();
@@ -430,6 +458,27 @@ function updatePlayerStats() {
         goldFind: petBonusStats.goldFind || 0,
         expFind: petBonusStats.expFind || 0
     };
+
+    // 技能加成
+    for (const skillId in gameState.skills.learned) {
+        const skillLevel = gameState.skills.learned[skillId];
+        
+        // 处理被动技能加成
+        if (typelessskillData[skillId].category === 'passive') {
+            const effect = calculateSkillEffect(skillId, skillLevel);
+            
+            switch (skillId) {
+                case "heavyStrike":
+                    // 重击不直接影响属性
+                    break;
+                case "preciseShot":
+                    // 增加暴击率
+                    baseStats.critRate += effect.critRate;
+                    break;
+                // 可以添加更多被动技能效果
+            }
+        }
+    }
     
     // 更新属性面板
     updateStatsPanel();
@@ -798,6 +847,167 @@ function releaseSelectedPets() {
     }
 }
 
+// 初始化技能面板
+function initSkillsPanel() {
+    // 更新技能点显示
+    elements.skillPoints.textContent = gameState.skills.skillPoints;
+    
+    // 更新激活技能显示
+    updateActiveSkillDisplay();
+    
+    // 初始化技能树
+    updateSkillPanel();
+    // initSkillTree('melee', elements.meleeSkillTree);
+    // initSkillTree('ranged', elements.rangedSkillTree);
+    // initSkillTree('magic', elements.magicSkillTree);
+    
+    // 绑定技能标签切换事件
+    elements.skillTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // 移除所有标签和内容的活动状态
+            elements.skillTabs.forEach(t => t.classList.remove('active'));
+            elements.skillTabContents.forEach(c => c.classList.remove('active'));
+            
+            // 添加当前标签和对应内容的活动状态
+            tab.classList.add('active');
+            const tabId = tab.getAttribute('data-tab');
+            document.getElementById(`${tabId}-content`).classList.add('active');
+        });
+    });
+}
+
+// 初始化技能树
+function initSkillTree(type, container) {
+    container.innerHTML = '';
+    
+    // 获取对应类型的技能树
+    const tree = skillTrees[type];
+    
+    // 创建技能树层级
+    tree.forEach((level, levelIndex) => {
+        const levelContainer = document.createElement('div');
+        levelContainer.className = 'skill-level';
+        
+        // 创建每个技能节点
+        level.forEach(skillId => {
+            const skill = typelessskillData[skillId];
+            const skillNode = document.createElement('div');
+            skillNode.className = 'skill-node';
+            skillNode.dataset.skillId = skillId;
+            
+            // 检查技能是否已学习
+            const isLearned = gameState.skills.learned[skillId];
+            const isActive = gameState.skills.activeSkill === skillId;
+            
+            // 设置节点样式
+            if (isLearned) {
+                skillNode.classList.add('learned');
+                if (isActive) {
+                    skillNode.classList.add('active');
+                }
+            } else if (canLearnSkill(skillId, gameState.skills)) {
+                skillNode.classList.add('can-learn');
+            } else {
+                skillNode.classList.add('locked');
+            }
+            
+            // 设置节点内容
+            skillNode.innerHTML = `
+                <div class="skill-icon">${skill.icon}</div>
+                <div class="skill-name">${skill.name}</div>
+                ${isLearned ? `<div class="skill-level-indicator">${gameState.skills.learned[skillId]}</div>` : ''}
+            `;
+            
+            // 绑定点击事件
+            skillNode.addEventListener('click', () => {
+                showSkillDetails(skillId);
+            });
+            
+            levelContainer.appendChild(skillNode);
+        });
+        
+        container.appendChild(levelContainer);
+    });
+}
+
+// 获取技能要求描述
+function getSkillRequirements(skillId, skillType) {
+    const skill = skillData[skillType][skillId];
+    const tier = "tier"+skill.tier;
+
+    let requirements = '<div class="skill-requirements">学习要求:</div>';
+    
+    if (skill.requiredSkill) {
+        const requiredSkill = typelessskillData[skill.requiredSkill];
+        requirements += `<div class="skill-requirement">• ${requiredSkill.name} 达到 ${skillUnlockRequirements[tier]} 级</div>`;
+    } else {
+        requirements += `<div class="skill-requirement">• 无前置技能要求</div>`;
+    }
+    
+    requirements += `<div class="skill-requirement">• 消耗 1 点技能点</div>`;
+    
+    return requirements;
+}
+
+// 获取技能操作按钮
+function getSkillActionButtons(skillId,skillType) {
+    const isLearned = gameState.skills.learned[skillId];
+    const isActive = gameState.skills.activeSkill === skillId;
+    const skill = skillData[skillType][skillId];
+    
+    let buttons = '';
+    
+    if (!isLearned) {
+        // 未学习，显示学习按钮
+        const canLearn = canLearnSkill(skillId, skillType, gameState.skills.learned) && gameState.skills.skillPoints >= 1;
+        buttons += `<button class="skill-action-button ${canLearn ? '' : 'disabled'}" data-action="learn" ${canLearn ? '' : 'disabled'}>学习 (消耗1点技能点)</button>`;
+    } else {
+        // 已学习，显示升级按钮
+        const canUpgrade = canUpgradeSkill(skillId, gameState.skills);
+        const currentLevel = gameState.skills.learned[skillId];
+        const upgradeCost = skillUpgradeCost[currentLevel];
+        
+        if (currentLevel !== "1") { // 不是最高级
+            buttons += `<button class="skill-action-button ${canUpgrade ? '' : 'disabled'}" data-action="upgrade" ${canUpgrade ? '' : 'disabled'}>升级 (消耗${upgradeCost}点技能点)</button>`;
+        }
+        
+        // 主动技能可以激活/取消激活
+        if (skill.category === 'active') {
+            if (isActive) {
+                buttons += `<button class="skill-action-button" data-action="deactivate">取消激活</button>`;
+            } else {
+                buttons += `<button class="skill-action-button" data-action="activate">激活</button>`;
+            }
+        }
+    }
+    
+    return buttons;
+}
+
+// 更新激活技能显示
+function updateActiveSkillDisplay() {
+    const activeSkillId = gameState.skills.activeSkill;
+    
+    if (activeSkillId) {
+        const skill = typelessskillData[activeSkillId];
+        const skillLevel = gameState.skills.learned[activeSkillId];
+        
+        elements.activeSkill.innerHTML = `
+            <div class="active-skill-header">
+                <div class="active-skill-icon">${skill.icon}</div>
+                <div class="active-skill-info">
+                    <div class="active-skill-name">${skill.name}</div>
+                    <div class="active-skill-level">等级: ${skillLevel}</div>
+                </div>
+            </div>
+            <div class="active-skill-description">${getSkillDescription(activeSkillId,skill.skillType, skillLevel)}</div>
+            <div class="active-skill-cooldown">冷却时间: ${skill.cooldown} 回合</div>
+        `;
+    } else {
+        elements.activeSkill.innerHTML = `<div class="no-active-skill">未激活技能</div>`;
+    }
+}
+
 // 初始化关卡选择面板
 function initStagesPanel() {
     elements.stageList.innerHTML = "";
@@ -869,6 +1079,18 @@ function bindEvents() {
             tab.classList.add('active');
             const tabId = tab.getAttribute('data-tab');
             document.getElementById(`${tabId}-content`).classList.add('active');
+        });
+    });
+
+    // 技能按钮
+    document.getElementById('btn-skills').addEventListener('click', () => {
+        elements.skillsPanel.style.display = 'block';
+    });
+    
+    // 关闭面板按钮
+    document.querySelectorAll('.close-panel').forEach(button => {
+        button.addEventListener('click', () => {
+            button.closest('.panel').style.display = 'none';
         });
     });
     
@@ -1127,15 +1349,121 @@ function handlePlayerDefeat() {
 function battleLoop() {
     if (!gameState.battleState.inBattle || !gameState.battleState.currentEnemy) return;
     
+    // 处理技能效果
+    let battleLog = [];
+
+    // 检查是否被眩晕
+    if (gameState.battleState.stunDuration > 0) {
+        battleLog.push(`${gameState.battleState.currentEnemy.name} 被眩晕，无法行动！`);
+        gameState.battleState.stunDuration -= 1;
+    }
+    
+    // 处理持续伤害
+    if (gameState.battleState.dotDuration > 0) {
+        const dotDamage = gameState.battleState.dotDamage;
+        gameState.battleState.currentEnemy.hp -= dotDamage;
+        battleLog.push(`${gameState.battleState.currentEnemy.name} 受到 ${dotDamage} 点持续伤害！`);
+        gameState.battleState.dotDuration -= 1;
+    }
+    
+    // 处理攻击力提升
+    let atkMultiplier = 1.0;
+    if (gameState.battleState.atkBoostDuration > 0) {
+        atkMultiplier += gameState.battleState.atkBoost / 100;
+        gameState.battleState.atkBoostDuration -= 1;
+    }
+    
+    // 处理伤害减免
+    let damageReduction = 0;
+    if (gameState.battleState.damageReductionDuration > 0) {
+        damageReduction = gameState.battleState.damageReduction;
+        gameState.battleState.damageReductionDuration -= 1;
+    }
+    
+    // 处理护盾
+    if (gameState.battleState.shieldDuration > 0) {
+        gameState.battleState.shieldDuration -= 1;
+    } else {
+        gameState.battleState.shield = 0; // 护盾过期
+    }
+    
     // 玩家攻击
-    const playerDamage = calculateDamage(gameState.player, gameState.battleState.currentEnemy);
-    gameState.battleState.currentEnemy.hp -= playerDamage;
+    let playerDamage = calculateDamage(gameState.player, gameState.battleState.currentEnemy);
+    playerDamage = Math.floor(playerDamage * atkMultiplier); // 应用攻击力提升
     
-    // 判断是否暴击
-    const isCritical = Math.random() * 100 < gameState.player.stats.critRate;
+    // 检查是否触发重击（被动技能）
+    if (gameState.skills.learned["heavyStrike"]) {
+        const heavyStrikeLevel = gameState.skills.learned["heavyStrike"];
+        const effect = calculateSkillEffect("heavyStrike", "melee",heavyStrikeLevel);
+        
+        if (Math.random() * 100 < effect.chance) {
+            playerDamage = Math.floor(playerDamage * (effect.damage / 100));
+            battleLog.push(`触发【重击】！造成 ${effect.damage}% 伤害！`);
+        }
+    }
     
-    logMessage(`你对 ${gameState.battleState.currentEnemy.name} 造成 ${playerDamage} 点${isCritical ? '暴击' : ''}伤害`);
+    // 应用主动技能
+    const activeSkillId = gameState.skills.activeSkill;
+    const skillType = typelessskillData[activeSkillId].skillType;
+    if (activeSkillId && typelessskillData[activeSkillId].type === 'active') {
+        // 检查技能冷却
+        if (gameState.skills.cooldowns[activeSkillId] === 0) {
+            const skillLevel = gameState.skills.learned[activeSkillId];
+            const result = calculateSkillEffect(activeSkillId, skillType, skillLevel);
+            
+            // 记录技能效果
+            battleLog.push(`使用技能【${typelessskillData[activeSkillId].name}】！`);
+            
+            if (result.damage) {
+                if (result.hits) {
+                    battleLog.push(`造成 ${result.hits} 次攻击，总计 ${result.damage} 点伤害！`);
+                } else {
+                    battleLog.push(`造成 ${result.damage} 点伤害！`);
+                }
+                playerDamage = 0; // 技能替代普通攻击
+            }
+            
+            if (result.stun) {
+                battleLog.push(`眩晕敌人 ${result.stun} 回合！`);
+            }
+            
+            if (result.atkBoost) {
+                battleLog.push(`提升攻击力 ${result.atkBoost}%，持续 ${result.duration} 回合！`);
+            }
+            
+            if (result.damageReduction) {
+                battleLog.push(`减少受到的伤害 ${result.damageReduction}%，持续 ${result.duration} 回合！`);
+            }
+            
+            if (result.dot) {
+                battleLog.push(`施加持续伤害效果，每回合 ${result.dot} 点，持续 ${result.duration} 回合！`);
+            }
+            
+            if (result.slow) {
+                battleLog.push(`减速敌人 ${result.slow}%！`);
+            }
+            
+            if (result.shield) {
+                battleLog.push(`创造护盾，可吸收 ${result.shield} 点伤害，持续 ${result.duration} 回合！`);
+            }
+            
+            // 设置技能冷却
+            gameState.skills.cooldowns[activeSkillId] = typelessskillData[activeSkillId].cooldown;
+        } else {
+            gameState.skills.cooldowns[activeSkillId] -= 1;
+            battleLog.push(`技能【${typelessskillData[activeSkillId].name}】冷却中，还需 ${gameState.skills.cooldowns[activeSkillId]} 回合！`);
+        }
+    }
     
+    // 应用普通攻击伤害
+    if (playerDamage > 0) {
+        gameState.battleState.currentEnemy.hp -= playerDamage;
+        
+        // 判断是否暴击
+        const isCritical = Math.random() * 100 < gameState.player.stats.critRate;
+        battleLog.push(`你对 ${gameState.battleState.currentEnemy.name} 造成 ${playerDamage} 点${isCritical ? '暴击' : ''}伤害`);
+    }
+
     // 魔宠技能攻击
     if (gameState.activePet !== null && gameState.pets[gameState.activePet]) {
         const pet = gameState.pets[gameState.activePet];
@@ -1148,7 +1476,7 @@ function battleLoop() {
             
             gameState.battleState.currentEnemy.hp -= skillDamage;
             
-            logMessage(`${pet.name} 使用 ${skillInfo.name} 对 ${gameState.battleState.currentEnemy.name} 造成 ${skillDamage} 点伤害`);
+            battleLog.push(`${pet.name} 使用 ${skillInfo.name} 对 ${gameState.battleState.currentEnemy.name} 造成 ${skillDamage} 点伤害`);
             
             // 设置技能冷却
             skill.cooldown = skillInfo.cooldown;
@@ -1160,18 +1488,49 @@ function battleLoop() {
 
     // 检查敌人是否死亡
     if (gameState.battleState.currentEnemy.hp <= 0) {
+        battleLog.forEach(message => logMessage(message));
         handleEnemyDefeat();
         return;
     }
     
-    // 敌人攻击
-    const enemyDamage = calculateDamage(gameState.battleState.currentEnemy, gameState.player);
-    gameState.player.stats.hp -= enemyDamage;
+    // 敌人攻击（如果没有被眩晕）
+    if (gameState.battleState.stunDuration <= 0) {
+        let enemyDamage = calculateDamage(gameState.battleState.currentEnemy, gameState.player);
+        
+        // 应用伤害减免
+        if (damageReduction > 0) {
+            enemyDamage = Math.floor(enemyDamage * (1 - damageReduction / 100));
+        }
+        
+        // 应用护盾
+        if (gameState.battleState.shield > 0) {
+            if (enemyDamage <= gameState.battleState.shield) {
+                gameState.battleState.shield -= enemyDamage;
+                battleLog.push(`护盾吸收了 ${enemyDamage} 点伤害！剩余护盾值: ${gameState.battleState.shield}`);
+                enemyDamage = 0;
+            } else {
+                enemyDamage -= gameState.battleState.shield;
+                battleLog.push(`护盾吸收了 ${gameState.battleState.shield} 点伤害并被击破！`);
+                gameState.battleState.shield = 0;
+                gameState.player.stats.hp -= enemyDamage;
+                battleLog.push(`${gameState.battleState.currentEnemy.name} 对你造成 ${enemyDamage} 点伤害`);
+            }
+        } else {
+            gameState.player.stats.hp -= enemyDamage;
+            battleLog.push(`${gameState.battleState.currentEnemy.name} 对你造成 ${enemyDamage} 点伤害`);
+        }
+    }
     
-    logMessage(`${gameState.battleState.currentEnemy.name} 对你造成 ${enemyDamage} 点伤害`);
+    // 减少技能冷却时间
+    for (const skillId in gameState.skills.cooldowns) {
+        if (gameState.skills.cooldowns[skillId] > 0) {
+            gameState.skills.cooldowns[skillId]--;
+        }
+    }
     
     // 检查玩家是否死亡
     if (gameState.player.stats.hp <= 0) {
+        battleLog.forEach(message => logMessage(message));
         handlePlayerDefeat();
         return;
     }
@@ -1181,6 +1540,12 @@ function battleLoop() {
     
     // 更新UI
     updateUI();
+
+    // 记录战斗日志
+    console.log(battleLog)
+    // logMessage('打印战斗日志')
+    battleLog.forEach(message => logMessage(message));
+    // logMessage('日志结束')
     
     // 继续战斗
     setTimeout(battleLoop, 2000);
@@ -1195,13 +1560,16 @@ function checkLevelUp() {
         gameState.player.level++;
         gameState.player.exp -= expNeeded;
         
+        // 获得技能点
+        gameState.skills.skillPoints += 1;
+        
         // 更新属性
         updatePlayerStats();
         
         // 恢复满血
         gameState.player.stats.hp = gameState.player.stats.maxHp;
         
-        logMessage(`恭喜！你升级到了 ${gameState.player.level} 级`);
+        logMessage(`恭喜！你升级到了 ${gameState.player.level} 级，获得了1点技能点！`);
         
         // 继续检查是否可以再次升级
         checkLevelUp();

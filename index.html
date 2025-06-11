@@ -180,7 +180,7 @@
 
         <!-- 魔宠面板 -->
         <div class="panel" id="pets-panel">
-            <h2>魔宠系统</h2>
+            <h2>魔宠</h2>
             <div class="pet-tabs">
                 <button class="pet-tab active" data-tab="my-pets">我的魔宠</button>
                 <button class="pet-tab" data-tab="pet-eggs">魔宠蛋</button>
@@ -204,6 +204,40 @@
             <button class="close-panel">关闭</button>
         </div>
 
+        <!-- 技能面板 -->
+        <div class="panel" id="skills-panel">
+            <h2>技能</h2>
+            
+            <div class="active-skill-container">
+                <h3>当前激活技能</h3>
+                <div id="active-skill"></div>
+            </div>
+            
+            <div class="skill-points-container">
+                <h3>可用技能点: <span id="skill-points">0</span></h3>
+            </div>
+            
+            <div class="skill-tabs">
+                <button class="skill-tab active" data-tab="melee-skills">近战技能</button>
+                <button class="skill-tab" data-tab="ranged-skills">远程技能</button>
+                <button class="skill-tab" data-tab="magic-skills">魔法技能</button>
+            </div>
+            
+            <div class="skill-tab-content active" id="melee-skills-content">
+                <div id="melee-skill-tree" class="skill-tree"></div>
+            </div>
+            
+            <div class="skill-tab-content" id="ranged-skills-content">
+                <div id="ranged-skill-tree" class="skill-tree"></div>
+            </div>
+            
+            <div class="skill-tab-content" id="magic-skills-content">
+                <div id="magic-skill-tree" class="skill-tree"></div>
+            </div>
+            
+            <button class="close-panel">关闭</button>
+        </div>
+
         <!-- 关卡选择面板 -->
         <div class="panel" id="stages-panel">
             <h2>选择关卡</h2>
@@ -212,6 +246,7 @@
         </div>
     </div>
 
+    <script src="js/skill.js"></script>
     <script src="js/data.js"></script>
     <script src="js/pet.js"></script>
     <script src="js/game.js"></script>

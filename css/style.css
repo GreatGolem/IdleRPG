@@ -656,3 +656,270 @@ body {
     color: white;
     font-size: 14px;
 }
+
+/* 技能面板样式 */
+.skill-tabs {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.skill-tab {
+    padding: 8px 15px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    margin-right: 5px;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+}
+
+.skill-tab.active {
+    background-color: #3498db;
+    color: white;
+    border-color: #2980b9;
+}
+
+.skill-tab-content {
+    display: none;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-top: none;
+    margin-bottom: 20px;
+}
+
+.skill-tab-content.active {
+    display: block;
+}
+
+.skill-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+.skill-level {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+}
+
+.skill-node {
+    width: 80px;
+    height: 80px;
+    border: 2px solid #ddd;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    background-color: #f9f9f9;
+    transition: all 0.3s;
+}
+
+.skill-node.learned {
+    border-color: #2ecc71;
+    background-color: #eafaf1;
+}
+
+.skill-node.active {
+    box-shadow: 0 0 10px #3498db;
+}
+
+.skill-node.can-learn {
+    border-color: #3498db;
+    background-color: #eaf2fa;
+}
+
+.skill-node.locked {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.skill-icon {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.skill-name {
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.2;
+}
+
+.skill-level-indicator {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background-color: #e74c3c;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.active-skill-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.active-skill-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.active-skill-icon {
+    font-size: 32px;
+    margin-right: 15px;
+}
+
+.active-skill-name {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.active-skill-level {
+    font-size: 14px;
+    color: #666;
+}
+
+.active-skill-description {
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+
+.active-skill-cooldown {
+    color: #e74c3c;
+    font-size: 14px;
+}
+
+.no-active-skill {
+    color: #999;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+}
+
+.skill-points-container {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #f1c40f;
+    color: #333;
+    border-radius: 5px;
+    text-align: center;
+}
+
+/* 技能详情弹窗 */
+.skill-details-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 350px;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    z-index: 100;
+    overflow: hidden;
+}
+
+.skill-details-header {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    background-color: #3498db;
+    color: white;
+    position: relative;
+}
+
+.skill-icon {
+    font-size: 32px;
+    margin-right: 15px;
+}
+
+.skill-name {
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.skill-level-info {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.close-details {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.skill-details-content {
+    padding: 15px;
+}
+
+.skill-type {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+.skill-description {
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.skill-cooldown {
+    color: #e74c3c;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.skill-requirements {
+    font-weight: bold;
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.required-skill {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+}
+
+.skill-details-footer {
+    padding: 15px;
+    background-color: #f5f5f5;
+    display: flex;
+    justify-content: space-around;
+}
+
+.skill-action-button {
+    padding: 8px 15px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.skill-action-button:hover {
+    background-color: #2980b9;
+}
+
+.skill-action-button.disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+}
