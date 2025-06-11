@@ -1319,9 +1319,10 @@ function handleEnemyDefeat() {
     setTimeout(() => {
         gameState.battleState.inBattle = false;
         gameState.battleState.battleProgress = 0; // 重置战斗进度条
+        gameState.player.hp = gameState.player.stats.maxHp; // 恢复玩家HP
         updateUI(); // 更新UI显示新敌人
         startBattle(); // 开始新的战斗
-    }, 2000); // 延迟1秒后生成新敌人并继续战斗
+    }, 2000); // 延迟2秒后生成新敌人并继续战斗
 }
 
 function handlePlayerDefeat() {
